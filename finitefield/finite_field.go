@@ -3,6 +3,8 @@ package finitefield
 import (
 	"errors"
 	"math/big"
+
+	u "github.com/lobiCode/prog_btc_go/btcutils"
 )
 
 var (
@@ -56,8 +58,8 @@ func Add(x, y *element) (*element, error) {
 		return nil, err
 	}
 
-	num := &big.Int{}
-	num.Add(x.num, y.num).Mod(num, x.prime)
+	num := u.AddInt(x.num, y.num)
+	num = num.Mod(num, x.prime)
 
 	return &element{num, x.prime}, nil
 }
@@ -67,8 +69,8 @@ func Sub(x, y *element) (*element, error) {
 		return nil, err
 	}
 
-	num := &big.Int{}
-	num.Sub(x.num, y.num).Mod(num, x.prime)
+	num := u.SubInt(x.num, y.num)
+	num = num.Mod(num, x.prime)
 
 	return &element{num, x.prime}, nil
 }
@@ -78,8 +80,8 @@ func Mul(x, y *element) (*element, error) {
 		return nil, err
 	}
 
-	num := &big.Int{}
-	num.Mul(x.num, y.num).Mod(num, x.prime)
+	num := u.MulInt(x.num, y.num)
+	num = num.Mod(num, x.prime)
 
 	return &element{num, x.prime}, nil
 }
@@ -89,26 +91,20 @@ func Div(x, y *element) (*element, error) {
 		return nil, err
 	}
 
-	powNum := &big.Int{}
-	powNum.Sub(x.prime, big.NewInt(2))
+	powNum := u.SubInt(x.prime, big.NewInt(2))
 
-	num := &big.Int{}
-	num.Exp(y.num, powNum, x.prime)
-	num.Mul(x.num, num)
-
+	num := u.ExpInt(y.num, powNum, x.prime)
+	num = u.MulInt(x.num, num)
 	num.Mod(num, x.prime)
 
 	return &element{num, x.prime}, nil
 }
 
 func Pow(x *element, exp *big.Int) *element {
-	modNum := &big.Int{}
-	modNum.Sub(x.prime, big.NewInt(1))
+	modNum := u.SubInt(x.prime, big.NewInt(1))
 
-	num := &big.Int{}
-	num.Mod(exp, modNum)
-
-	num.Exp(x.num, num, x.prime)
+	num := u.ModInt(exp, modNum)
+	num = u.ExpInt(x.num, num, x.prime)
 
 	return &element{num, x.prime}
 }
