@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-type testOperatorFunc func(x, y *element) (*element, error)
+type testOperatorFunc func(x, y *Element) *Element
 type testOperatorCase struct {
 	test          string
 	xNum          int64
@@ -94,7 +94,7 @@ func TestNe(t *testing.T) {
 func TestAdd(t *testing.T) {
 	tests := []testOperatorCase{
 		{"add 1", 2, 31, 15, 31, 17, 31, nil},
-		{"add error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
+		//{"add error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
 	}
 	testOperators(tests, Add, t)
 }
@@ -103,7 +103,7 @@ func TestSub(t *testing.T) {
 	tests := []testOperatorCase{
 		{"sub 1", 29, 31, 4, 31, 25, 31, nil},
 		{"sub 2", 4, 31, 29, 31, 6, 31, nil},
-		{"sub error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
+		//{"sub error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
 	}
 	testOperators(tests, Sub, t)
 }
@@ -111,7 +111,7 @@ func TestSub(t *testing.T) {
 func TestMul(t *testing.T) {
 	tests := []testOperatorCase{
 		{"mul 1", 24, 31, 19, 31, 22, 31, nil},
-		{"mul error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
+		//{"mul error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
 	}
 	testOperators(tests, Mul, t)
 }
@@ -122,7 +122,7 @@ func TestDiv(t *testing.T) {
 		{"div 2", 7, 19, 5, 19, 9, 19, nil},
 		{"div 3", 2, 19, 7, 19, 3, 19, nil},
 		{"div 4", 0, 19, 1, 19, 0, 19, nil},
-		{"div error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
+		//{"div error expected", 2, 19, 15, 31, 0, 0, ErrFiniteFieldDiffFields},
 	}
 	testOperators(tests, Div, t)
 }
@@ -156,8 +156,8 @@ func testOperators(tests []testOperatorCase, f testOperatorFunc, t *testing.T) {
 		t.Run(test.test, func(t *testing.T) {
 			x, _ := NewElement(test.xNum, test.xPrime)
 			y, _ := NewElement(test.yNum, test.yPrime)
-			result, err := f(x, y)
-			check(err, test.err, t)
+			result := f(x, y)
+			//check(err, test.err, t)
 			if test.err == nil {
 				checkInt(big.NewInt(test.expectedNum), result.GetNum(), t)
 				checkInt(big.NewInt(test.expectedPrime), result.GetPrime(), t)

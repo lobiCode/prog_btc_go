@@ -16,6 +16,11 @@ func MulInt(x, y *big.Int) *big.Int {
 	return z
 }
 
+func InvInt(x, m *big.Int) *big.Int {
+	exp := SubInt(m, NewInt(2))
+	return ExpInt(x, exp, m)
+}
+
 func SubInt(x, y *big.Int) *big.Int {
 	z := NewInt(0)
 	z.Sub(x, y)
@@ -23,9 +28,23 @@ func SubInt(x, y *big.Int) *big.Int {
 	return z
 }
 
+func DivInt(x, y *big.Int) *big.Int {
+	z := NewInt(0)
+	z.Div(x, y)
+
+	return z
+}
+
 func ExpInt(x, exp, m *big.Int) *big.Int {
 	z := NewInt(0)
 	z.Exp(x, exp, m)
+
+	return z
+}
+
+func PowInt(x, exp *big.Int) *big.Int {
+	z := NewInt(0)
+	z.Exp(x, exp, nil)
 
 	return z
 }
