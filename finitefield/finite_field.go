@@ -2,6 +2,7 @@ package finitefield
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	u "github.com/lobiCode/prog_btc_go/btcutils"
@@ -12,28 +13,36 @@ var (
 	ErrFiniteFieldDiffFields    = errors.New("Number of different fields")
 )
 
-type element struct {
+type Element struct {
 	num   *big.Int
 	prime *big.Int
 }
 
-func NewElement(num, prime int64) (*element, error) {
+func NewElement(num, prime int64) (*Element, error) {
 	if num >= prime {
 		return nil, ErrFiniteFieldNumNotInRange
 	}
 
-	return &element{big.NewInt(num), big.NewInt(prime)}, nil
+	return &Element{big.NewInt(num), big.NewInt(prime)}, nil
 }
 
-func (f *element) GetPrime() *big.Int {
+func (f *Element) GetPrime() *big.Int {
 	return f.prime
 }
 
-func (f *element) GetNum() *big.Int {
+func (f *Element) GetNum() *big.Int {
 	return f.num
 }
 
-func Eq(x, y *element) bool {
+func (f *Element) String() string {
+	return fmt.Sprintf("%s, %s", f.num, f.prime)
+}
+
+func Eq(x, y *Element) bool {
+	if x == nil && y == nil {
+		return true
+	}
+
 	if x == nil || y == nil {
 		return false
 	}
@@ -41,11 +50,11 @@ func Eq(x, y *element) bool {
 	return (x.num.Cmp(y.num) == 0 && x.prime.Cmp(y.prime) == 0)
 }
 
-func Ne(x, y *element) bool {
+func Ne(x, y *Element) bool {
 	return !Eq(x, y)
 }
 
-func Cmp(x, y *element) error {
+func Cmp(x, y *Element) error {
 	if x != nil && y != nil && x.prime.Cmp(y.prime) == 0 {
 		return nil
 	}
@@ -53,42 +62,42 @@ func Cmp(x, y *element) error {
 	return ErrFiniteFieldDiffFields
 }
 
-func Add(x, y *element) (*element, error) {
+func Add(x, y *Element) *Element {
 	if err := Cmp(x, y); err != nil {
-		return nil, err
+		panic(err.Error())
 	}
 
 	num := u.AddInt(x.num, y.num)
 	num = num.Mod(num, x.prime)
 
-	return &element{num, x.prime}, nil
+	return &Element{num, x.prime}
 }
 
-func Sub(x, y *element) (*element, error) {
+func Sub(x, y *Element) *Element {
 	if err := Cmp(x, y); err != nil {
-		return nil, err
+		panic(err.Error())
 	}
 
 	num := u.SubInt(x.num, y.num)
 	num = num.Mod(num, x.prime)
 
-	return &element{num, x.prime}, nil
+	return &Element{num, x.prime}
 }
 
-func Mul(x, y *element) (*element, error) {
+func Mul(x, y *Element) *Element {
 	if err := Cmp(x, y); err != nil {
-		return nil, err
+		panic(err.Error())
 	}
 
 	num := u.MulInt(x.num, y.num)
 	num = num.Mod(num, x.prime)
 
-	return &element{num, x.prime}, nil
+	return &Element{num, x.prime}
 }
 
-func Div(x, y *element) (*element, error) {
+func Div(x, y *Element) *Element {
 	if err := Cmp(x, y); err != nil {
-		return nil, err
+		panic(err.Error())
 	}
 
 	powNum := u.SubInt(x.prime, big.NewInt(2))
@@ -97,14 +106,20 @@ func Div(x, y *element) (*element, error) {
 	num = u.MulInt(x.num, num)
 	num.Mod(num, x.prime)
 
-	return &element{num, x.prime}, nil
+	return &Element{num, x.prime}
 }
 
-func Pow(x *element, exp *big.Int) *element {
+func Pow(x *Element, exp *big.Int) *Element {
 	modNum := u.SubInt(x.prime, big.NewInt(1))
 
 	num := u.ModInt(exp, modNum)
 	num = u.ExpInt(x.num, num, x.prime)
 
-	return &element{num, x.prime}
+	return &Element{num, x.prime}
+}
+
+func RMul(x *Element, cof *big.Int) *Element {
+	num := u.ModInt(u.MulInt(x.num, cof), x.prime)
+
+	return &Element{num, x.prime}
 }
