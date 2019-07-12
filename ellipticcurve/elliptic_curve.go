@@ -25,6 +25,31 @@ func (p *Point) GetX() *ff.Element {
 	return p.x
 }
 
+func (p *Point) GetXbytes() []byte {
+	// TODO nil
+	return p.x.GetNumBytes()
+}
+
+func (p *Point) GetYbytes() []byte {
+	// TODO nil
+	return p.y.GetNumBytes()
+}
+
+func (p *Point) GetXhex() string {
+	// TODO nil
+	return p.x.GetNumHex()
+}
+
+func (p *Point) GetYhex() string {
+	// TODO nil
+	return p.y.GetNumHex()
+}
+
+func (p *Point) IsYeven() bool {
+	// TODO nil
+	return p.y.IsEven()
+}
+
 func NewPoint(x, y, a, b *ff.Element) (*Point, error) {
 	if (x != nil && y == nil) || (x == nil && y != nil) {
 		return nil, ErrEllipticCurvePointNotOnCurve
@@ -35,15 +60,21 @@ func NewPoint(x, y, a, b *ff.Element) (*Point, error) {
 	}
 
 	l := ff.Pow(y, big.NewInt(2))
-	axb := ff.Add(ff.Mul(x, a), b)
-	x3 := ff.Pow(x, big.NewInt(3))
-	r := ff.Add(x3, axb)
+	r := CalcEcRightSide(x, a, b)
 
 	if ff.Eq(l, r) {
 		return &Point{x, y, a, b}, nil
 	}
 
 	return nil, ErrEllipticCurvePointNotOnCurve
+}
+
+func CalcEcRightSide(x, a, b *ff.Element) *ff.Element {
+	axb := ff.Add(ff.Mul(x, a), b)
+	x3 := ff.Pow(x, big.NewInt(3))
+	r := ff.Add(x3, axb)
+
+	return r
 }
 
 func Eq(p1, p2 *Point) bool {

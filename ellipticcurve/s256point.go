@@ -51,3 +51,7 @@ func GetSECP256k1Curve() *SECP256k1Curve {
 
 	return &SECP256k1Curve{a, b, p, n, gx, gy, g}
 }
+
+func NewS256Point(x, y *ff.Element) (*Point, error) {
+	return NewPoint(x, y, BTCCurve.A, BTCCurve.B)
+}
