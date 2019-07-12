@@ -1,6 +1,7 @@
 package finitefield
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -34,6 +35,17 @@ func (f *Element) GetNum() *big.Int {
 	return f.num
 }
 
+func (f *Element) GetNumHex() string {
+	return hex.EncodeToString(f.num.Bytes())
+}
+
+func (f *Element) GetNumBytes() []byte {
+	return f.num.Bytes()
+}
+
+func (f *Element) IsEven() bool {
+	return u.IsEvenInt(f.num)
+}
 func (f *Element) String() string {
 	return fmt.Sprintf("%s, %s", f.num, f.prime)
 }
