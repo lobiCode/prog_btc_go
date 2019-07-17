@@ -1,6 +1,8 @@
 package btcutils
 
-import "math/big"
+import (
+	"math/big"
+)
 
 func AddInt(x, y *big.Int) *big.Int {
 	z := new(big.Int)
@@ -118,4 +120,31 @@ func PowFloat(x *big.Float, exp uint64) *big.Float {
 
 func NewZeroFloat() *big.Float {
 	return big.NewFloat(0.0)
+}
+
+func LittleEndianToBigInt(b []byte) *big.Int {
+	tmp := make([]byte, len(b))
+
+	copy(tmp, b)
+	ReverseBytes(tmp)
+	i := new(big.Int).SetBytes(tmp)
+
+	return i
+}
+
+func BigIntToLittleEndian(i *big.Int, l uint) []byte {
+	tmp := make([]byte, l)
+
+	b := i.Bytes()
+	ReverseBytes(b)
+	copy(tmp, b)
+
+	return tmp
+}
+
+func ReverseBytes(b []byte) {
+	l := len(b)
+	for i := 0; i < l/2; i++ {
+		b[i], b[l-1-i] = b[l-1-i], b[i]
+	}
 }
