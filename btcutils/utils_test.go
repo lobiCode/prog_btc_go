@@ -33,6 +33,24 @@ func TestBigToIntLittleEndian(t *testing.T) {
 
 }
 
+func TestBase58Encode(t *testing.T) {
+	testCase := []struct {
+		test     string
+		s        string
+		expected string
+	}{
+		{"t 1", "\x00\x00", "11"},
+		{"t 2", "yeijskloilk49", "B7TY7kdDFMU2gmpVqr"},
+	}
+
+	for _, test := range testCase {
+		t.Run(test.test, func(t *testing.T) {
+			result := Base58Encode([]byte(test.s))
+			check(test.expected, result, t)
+		})
+	}
+}
+
 func check(expected, recived interface{}, t *testing.T) {
 	t.Helper()
 	if !reflect.DeepEqual(recived, expected) {

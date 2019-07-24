@@ -68,16 +68,16 @@ func TestParseTxIn(t *testing.T) {
 	s := hex.EncodeToString(result.Serialize())
 	check(in, s, t)
 }
+func TestParseTxOut(t *testing.T) {
+	in := "51430f00000000001976a914ab0c0b2e98b1ab6dbf67d4750b0a56244948a87988ac"
 
-func TestParseScriptSig(t *testing.T) {
-	in := "6a47304402204585bcdef85e6b1c6af5c2669d4830ff86e42dd205c0e089bc2a821657e951c002201024a10366077f87d6bce1f7100ad8cfa8a064b39d4e8fe4ea13a7b71aa8180f012102f0da57e85eec2934a82a585ea337ce2f4998b50ae699dd79f5880e253dafafb7"
 	inB, err := hex.DecodeString(in)
 	if err != nil {
 		panic(err)
 	}
 
 	r := bytes.NewReader(inB)
-	result, err := ParseScriptSig(r)
+	result, err := ParseTxOut(r)
 	if err != nil {
 		panic(err)
 	}
