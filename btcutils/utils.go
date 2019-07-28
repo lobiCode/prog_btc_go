@@ -1,7 +1,17 @@
 package btcutils
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"io"
 	"math/big"
+
+	"golang.org/x/crypto/ripemd160"
+)
+
+const (
+	alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 )
 
 func AddInt(x, y *big.Int) *big.Int {
@@ -147,4 +157,123 @@ func ReverseBytes(b []byte) {
 	for i := 0; i < l/2; i++ {
 		b[i], b[l-1-i] = b[l-1-i], b[i]
 	}
+}
+
+func EncodeVariant(i int) []byte {
+	switch {
+	case i < 0xfd:
+		return []byte{byte(i)}
+	case i < 0x10000:
+		return encodeVariant(0xfd, uint16(i))
+	case i < 0x100000000:
+		return encodeVariant(0xfe, uint32(i))
+	case i < 0x7FFFFFFFFFFFFFFF:
+		return encodeVariant(0xff, uint64(i))
+	default:
+		panic("integer to large")
+	}
+}
+
+func encodeVariant(b byte, i interface{}) []byte {
+	buf := new(bytes.Buffer)
+	buf.WriteByte(b)
+
+	err := binary.Write(buf, binary.LittleEndian, i)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
+}
+
+func ReadVariant(r io.Reader) (uint64, error) {
+	var i int64
+	b := make([]byte, 8)
+	_, err := io.ReadFull(r, b[:1])
+	if err != nil {
+		return 0, err
+	}
+
+	switch b[0] {
+	case 0xfd:
+		i = 2
+	case 0xfe:
+		i = 4
+	case 0xff:
+		i = 8
+	default:
+		return uint64(b[0]), nil
+	}
+
+	_, err = io.ReadFull(r, b[:i])
+	if err != nil {
+		return 0, err
+	}
+
+	n := binary.LittleEndian.Uint64(b)
+
+	return n, nil
+}
+
+func Copyb(b []byte) []byte {
+	tmp := make([]byte, len(b))
+	copy(tmp, b)
+	return tmp
+}
+
+func Hash256(b []byte) []byte {
+	sum := sha256.Sum256(b)
+	sum = sha256.Sum256(sum[:])
+	return sum[:]
+}
+
+func Hash160(b []byte) []byte {
+	sum := sha256.Sum256(b)
+	h := ripemd160.New()
+	h.Write(sum[:])
+	return h.Sum(nil)
+}
+
+func EncodeBase58Checksum(b []byte) string {
+	b256 := Hash256(b)[:4]
+	asum := append(b, b256...)
+
+	return Base58Encode(asum)
+}
+
+func Base58Encode(b []byte) string {
+	x := ParseBytes(b)
+	zero := NewInt(0)
+	x58 := NewInt(58)
+	mod := new(big.Int)
+
+	base58 := make([]byte, 0, len(b))
+
+	for x.Cmp(zero) > 0 {
+		x, mod = DivModInt(x, x58)
+		base58 = append(base58, alphabet[mod.Int64()])
+	}
+
+	for _, i := range b {
+		if i != 0 {
+			break
+		}
+		base58 = append(base58, '1')
+	}
+
+	l := len(base58)
+	for i := 0; i < l/2; i++ {
+		base58[i], base58[l-1-i] = base58[l-1-i], base58[i]
+	}
+
+	return string(base58)
+}
+
+func ReadByetes(r io.Reader, n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := io.ReadFull(r, b)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }

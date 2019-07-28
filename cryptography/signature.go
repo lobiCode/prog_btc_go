@@ -2,7 +2,6 @@ package cryptography
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"math/big"
@@ -10,13 +9,12 @@ import (
 	u "github.com/lobiCode/prog_btc_go/btcutils"
 	ec "github.com/lobiCode/prog_btc_go/ellipticcurve"
 	ff "github.com/lobiCode/prog_btc_go/finitefield"
-	"golang.org/x/crypto/ripemd160"
 )
 
-var ErrPubKeyInvalidFormat = errors.New("Publick key invalid format")
-
-const (
-	alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+var (
+	ErrPubKeyInvalidFormat = errors.New("publick key invalid format")
+	ErrBadSig              = errors.New("bad signature")
+	ErrBadSigLength        = errors.New("bad signature length")
 )
 
 type Signature struct {
@@ -25,7 +23,8 @@ type Signature struct {
 
 func (sig *Signature) Der() []byte {
 	rbin := sig.r.Bytes()
-	if rbin[0] >= 0x80 {
+	rbin = bytes.TrimLeftFunc(rbin, isZeroPrefix)
+	if rbin[0]&0x80 > 0 {
 		rbin = append([]byte{0x00}, rbin...)
 	}
 	// TODO
@@ -40,9 +39,53 @@ func (sig *Signature) Der() []byte {
 
 	result = append(result, sbin...)
 
-	result = append([]byte{0x03, byte(len(result))}, result...)
+	result = append([]byte{0x30, byte(len(result))}, result...)
 
 	return result
+}
+
+func ParseSignature(sig []byte) (*Signature, error) {
+	check := []struct {
+		expected byte
+		err      error
+		b        []byte
+	}{
+		{0x30, ErrBadSig, nil},
+		{byte(len(sig) - 2), ErrBadSigLength, nil},
+		{0x02, ErrBadSig, nil},
+		{0, nil, nil},
+		{0x02, ErrBadSig, nil},
+		{0, nil, nil},
+	}
+
+	br := bytes.NewReader(sig)
+	for i, v := range check {
+		b, err := u.ReadByetes(br, 1)
+		if err != nil {
+			return nil, err
+		}
+		if i == 3 || i == 5 {
+			b, err = u.ReadByetes(br, int(b[0]))
+			if err != nil {
+				return nil, err
+			}
+			check[i].b = b
+		} else {
+			if b[0] != v.expected {
+				return nil, v.err
+			}
+		}
+	}
+
+	total := len(check[3].b) + len(check[5].b) + 6
+	if total != len(sig) {
+		return nil, ErrBadSig
+	}
+
+	r := u.ParseBytes(check[3].b)
+	s := u.ParseBytes(check[5].b)
+
+	return &Signature{r, s}, nil
 }
 
 func (sig *Signature) String() string {
@@ -75,7 +118,7 @@ func (pk *PrivateKey) Sec(compressed bool) []byte {
 }
 
 func (pk *PrivateKey) Address(compressed, testnet bool) string {
-	b160 := Hash160(pk.Sec(compressed))
+	b160 := u.Hash160(pk.Sec(compressed))
 
 	result := make([]byte, 1, len(b160)+1)
 	if testnet {
@@ -86,7 +129,7 @@ func (pk *PrivateKey) Address(compressed, testnet bool) string {
 
 	result = append(result, b160...)
 
-	return EncodeBase58Checksum(result)
+	return u.EncodeBase58Checksum(result)
 }
 
 func (pk *PrivateKey) Wif(compressed, testnet bool) string {
@@ -105,26 +148,22 @@ func (pk *PrivateKey) Wif(compressed, testnet bool) string {
 		result = append(result, 0x01)
 	}
 
-	return EncodeBase58Checksum(result)
+	return u.EncodeBase58Checksum(result)
 }
 
-func ParsePublicKey(key string) (*ec.Point, error) {
+func ParsePublicKey(key []byte) (*ec.Point, error) {
 	// TODO len
-	bKey, err := hex.DecodeString(key)
-	if err != nil {
-		return nil, err
-	}
 
-	x := u.ParseBytes(bKey[1:33])
+	x := u.ParseBytes(key[1:33])
 	xf, err := ff.NewS256Field(x, ec.BTCCurve.P)
 	if err != nil {
 		return nil, err
 	}
 
-	format := bKey[0]
+	format := key[0]
 
 	if format == 4 {
-		y := u.ParseBytes(bKey[33:65])
+		y := u.ParseBytes(key[33:65])
 		yf, err := ff.NewS256Field(y, ec.BTCCurve.P)
 		if err != nil {
 			return nil, err
@@ -160,8 +199,7 @@ func NewPrivateKey(secret *big.Int) *PrivateKey {
 	return &PrivateKey{secret, ec.RMul(ec.BTCCurve.G, secret)}
 }
 
-func (pk *PrivateKey) Sign(message string) *Signature {
-	z := getHash256Int(message)
+func (pk *PrivateKey) Sign(z *big.Int) *Signature {
 	k := getDeterministicK()
 	r := ec.RMul(ec.BTCCurve.G, k).GetX().GetNum()
 	kInv := u.InvInt(k, ec.BTCCurve.N)
@@ -173,9 +211,8 @@ func (pk *PrivateKey) Sign(message string) *Signature {
 	return &Signature{r, s}
 }
 
-func Verify(message string, signature *Signature, publicKey *ec.Point) bool {
+func Verify(z *big.Int, signature *Signature, publicKey *ec.Point) bool {
 	sInv := u.InvInt(signature.s, ec.BTCCurve.N)
-	z := getHash256Int(message)
 	uu := u.ModInt(u.MulInt(z, sInv), ec.BTCCurve.N)
 	v := u.ModInt(u.MulInt(signature.r, sInv), ec.BTCCurve.N)
 	sum := ec.Add(ec.RMul(ec.BTCCurve.G, uu), ec.RMul(publicKey, v)).GetX().GetNum()
@@ -186,36 +223,8 @@ func Verify(message string, signature *Signature, publicKey *ec.Point) bool {
 	return false
 }
 
-func Base58Encode(b []byte) string {
-	x := u.ParseBytes(b)
-	zero := u.NewInt(0)
-	x58 := u.NewInt(58)
-	mod := new(big.Int)
-
-	base58 := make([]byte, 0, len(b))
-
-	for x.Cmp(zero) > 0 {
-		x, mod = u.DivModInt(x, x58)
-		base58 = append(base58, alphabet[mod.Int64()])
-	}
-
-	for _, i := range b {
-		if i != 0 {
-			break
-		}
-		base58 = append(base58, '1')
-	}
-
-	l := len(base58)
-	for i := 0; i < l/2; i++ {
-		base58[i], base58[l-1-i] = base58[l-1-i], base58[i]
-	}
-
-	return string(base58)
-}
-
 func getHash256Int(s string) *big.Int {
-	sum := Hash256([]byte(s))
+	sum := u.Hash256([]byte(s))
 	i := new(big.Int).SetBytes(sum[:])
 
 	return i
@@ -237,25 +246,4 @@ func isZeroPrefix(r rune) bool {
 		return true
 	}
 	return false
-}
-
-func Hash256(b []byte) []byte {
-	sum := sha256.Sum256(b)
-	sum = sha256.Sum256(sum[:])
-	return sum[:]
-}
-
-func Hash160(b []byte) []byte {
-	sum := sha256.Sum256(b)
-	h := ripemd160.New()
-	h.Write(sum[:])
-	return h.Sum(nil)
-}
-
-func EncodeBase58Checksum(b []byte) string {
-	b256 := Hash256(b)[:4]
-	asum := append(b, b256...)
-
-	return Base58Encode(asum)
-
 }

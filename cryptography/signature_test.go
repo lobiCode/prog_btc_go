@@ -10,23 +10,23 @@ import (
 )
 
 func TestSign(t *testing.T) {
-	text := "Bitcoin Bitcoin"
+	z := getHash256Int("Bitcoin Bitcoin")
 	pk := NewPrivateKey(getHash256Int("ifkdafkfkfiasfiodidafpasfjadsf"))
 
-	signature := pk.Sign(text)
+	signature := pk.Sign(z)
 
-	ok := Verify(text, signature, pk.point)
+	ok := Verify(z, signature, pk.point)
 	check(true, ok, t)
 }
 
 func TestSignFail(t *testing.T) {
-	text := "Bitcoin Bitcoin"
+	z := getHash256Int("Bitcoin Bitcoin")
 	pk1 := NewPrivateKey(getHash256Int("ifkdafkfkfiasfiodidafpasfjadsf"))
 	pk2 := NewPrivateKey(getHash256Int("111899998900"))
 
-	signature := pk1.Sign(text)
+	signature := pk1.Sign(z)
 
-	ok := Verify(text, signature, pk2.point)
+	ok := Verify(z, signature, pk2.point)
 	check(false, ok, t)
 }
 
@@ -49,28 +49,10 @@ func TestSignParse(t *testing.T) {
 	for _, test := range testCase {
 		t.Run(test.test, func(t *testing.T) {
 			pk := NewPrivateKey(getHash256Int(test.secret))
-			pub := hex.EncodeToString(pk.Sec(test.compressed))
+			pub := pk.Sec(test.compressed)
 			parsePub, _ := ParsePublicKey(pub)
 
 			check(true, ec.Eq(pk.point, parsePub), t)
-		})
-	}
-}
-
-func TestBase58Encode(t *testing.T) {
-	testCase := []struct {
-		test     string
-		s        string
-		expected string
-	}{
-		{"t 1", "\x00\x00", "11"},
-		{"t 2", "yeijskloilk49", "B7TY7kdDFMU2gmpVqr"},
-	}
-
-	for _, test := range testCase {
-		t.Run(test.test, func(t *testing.T) {
-			result := Base58Encode([]byte(test.s))
-			check(test.expected, result, t)
 		})
 	}
 }
@@ -83,11 +65,27 @@ func TestAddress(t *testing.T) {
 }
 
 func TestDer(t *testing.T) {
-	expected := "0345022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec"
+	expected := "3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec"
 	r, _ := u.ParseInt("0x37206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c6", 0)
 	s, _ := u.ParseInt("0x8ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec", 0)
-	sig := Signature{r, s}
+	sig := &Signature{r, s}
 	check(expected, sig.String(), t)
+
+	b, _ := hex.DecodeString(expected)
+	sigResult, err := ParseSignature(b)
+
+	check(nil, err, t)
+	check(sig, sigResult, t)
+}
+
+func TestDer2(t *testing.T) {
+	text := "3045022000eff69ef2b1bd93a66ed5219add4fb51e11a840f404876325a1e8ffe0529a2c022100c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6"
+	sig, _ := hex.DecodeString(text)
+
+	sigResult, err := ParseSignature(sig)
+
+	check(nil, err, t)
+	check(text, sigResult.String(), t)
 }
 
 func check(expected, recived interface{}, t *testing.T) {
