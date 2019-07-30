@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"math/big"
 
 	u "github.com/lobiCode/prog_btc_go/btcutils"
 	c "github.com/lobiCode/prog_btc_go/cryptography"
 )
 
-type OperationFunc = func(z string, cmds, realStack, altStack *stack) bool
+type OperationFunc = func(z *big.Int, cmds, realStack, altStack *stack) bool
 
 func _add_number(i int64, realStack *stack) bool {
 	b, err := encodeNum(i)
@@ -22,75 +23,75 @@ func _add_number(i int64, realStack *stack) bool {
 	return true
 }
 
-func op0(z string, cmds, realStack, altStack *stack) bool {
+func op0(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(0, realStack)
 }
 
-func op1(z string, cmds, realStack, altStack *stack) bool {
+func op1(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(1, realStack)
 }
 
-func op2(z string, cmds, realStack, altStack *stack) bool {
+func op2(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(2, realStack)
 }
 
-func op3(z string, cmds, realStack, altStack *stack) bool {
+func op3(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(3, realStack)
 }
 
-func op4(z string, cmds, realStack, altStack *stack) bool {
+func op4(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(4, realStack)
 }
 
-func op5(z string, cmds, realStack, altStack *stack) bool {
+func op5(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(5, realStack)
 }
 
-func op6(z string, cmds, realStack, altStack *stack) bool {
+func op6(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(6, realStack)
 }
 
-func op7(z string, cmds, realStack, altStack *stack) bool {
+func op7(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(7, realStack)
 }
 
-func op8(z string, cmds, realStack, altStack *stack) bool {
+func op8(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(8, realStack)
 }
 
-func op9(z string, cmds, realStack, altStack *stack) bool {
+func op9(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(9, realStack)
 }
 
-func op10(z string, cmds, realStack, altStack *stack) bool {
+func op10(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(10, realStack)
 }
 
-func op11(z string, cmds, realStack, altStack *stack) bool {
+func op11(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(11, realStack)
 }
 
-func op12(z string, cmds, realStack, altStack *stack) bool {
+func op12(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(12, realStack)
 }
 
-func op13(z string, cmds, realStack, altStack *stack) bool {
+func op13(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(13, realStack)
 }
 
-func op14(z string, cmds, realStack, altStack *stack) bool {
+func op14(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(14, realStack)
 }
 
-func op15(z string, cmds, realStack, altStack *stack) bool {
+func op15(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(15, realStack)
 }
 
-func op16(z string, cmds, realStack, altStack *stack) bool {
+func op16(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return _add_number(16, realStack)
 }
 
-func opDup(z string, cmds, realStack, altStack *stack) bool {
+func opDup(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 1 {
 		return false
 	}
@@ -99,7 +100,7 @@ func opDup(z string, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
-func opHash256(z string, cmds, realStack, altStack *stack) bool {
+func opHash256(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 1 {
 		return false
 	}
@@ -110,7 +111,7 @@ func opHash256(z string, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
-func opHash160(z string, cmds, realStack, altStack *stack) bool {
+func opHash160(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 1 {
 		return false
 	}
@@ -121,7 +122,7 @@ func opHash160(z string, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
-func opChecksig(z string, cmds, realStack, altStack *stack) bool {
+func opChecksig(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 2 {
 		return false
 	}
@@ -140,19 +141,15 @@ func opChecksig(z string, cmds, realStack, altStack *stack) bool {
 	}
 
 	var i int64 = 0
-	zz, ok := u.ParseInt(z, 0)
-	if !ok {
-		return false
-	}
 
-	if c.Verify(zz, signature, publicKey) {
+	if c.Verify(z, signature, publicKey) {
 		i = 1
 	}
 
 	return _add_number(i, realStack)
 }
 
-func opEqual(z string, cmds, realStack, altStack *stack) bool {
+func opEqual(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 2 {
 		return false
 	}
@@ -169,7 +166,7 @@ func opEqual(z string, cmds, realStack, altStack *stack) bool {
 	return _add_number(i, realStack)
 }
 
-func opVerify(z string, cmds, realStack, altStack *stack) bool {
+func opVerify(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 1 {
 		return false
 	}
@@ -187,11 +184,11 @@ func opVerify(z string, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
-func opEqualverify(z string, cmds, realStack, altStack *stack) bool {
+func opEqualverify(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return opEqual(z, cmds, realStack, altStack) && opVerify(z, cmds, realStack, altStack)
 }
 
-func op2dup(z string, cmds, realStack, altStack *stack) bool {
+func op2dup(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 2 {
 		return false
 	}
@@ -204,7 +201,7 @@ func op2dup(z string, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
-func opSwap(z string, cmds, realStack, altStack *stack) bool {
+func opSwap(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 2 {
 		return false
 	}
@@ -216,7 +213,7 @@ func opSwap(z string, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
-func opNot(z string, cmds, realStack, altStack *stack) bool {
+func opNot(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 1 {
 		return false
 	}
@@ -236,7 +233,7 @@ func opNot(z string, cmds, realStack, altStack *stack) bool {
 	return _add_number(i, realStack)
 }
 
-func opSha1(z string, cmds, realStack, altStack *stack) bool {
+func opSha1(z *big.Int, cmds, realStack, altStack *stack) bool {
 	if realStack.length() < 1 {
 		return false
 	}

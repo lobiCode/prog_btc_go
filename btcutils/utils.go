@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"errors"
 	"io"
 	"math/big"
+	"strings"
 
 	"golang.org/x/crypto/ripemd160"
 )
@@ -13,6 +15,8 @@ import (
 const (
 	alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 )
+
+var ErrBadAddress = errors.New("bad address")
 
 func AddInt(x, y *big.Int) *big.Int {
 	z := new(big.Int)
@@ -240,6 +244,17 @@ func EncodeBase58Checksum(b []byte) string {
 	return Base58Encode(asum)
 }
 
+func DecodeBase58Checksum(s string) ([]byte, error) {
+	b := Base58Decode(s)
+	checksum := b[len(b)-4:]
+	b256 := Hash256(b[:len(b)-4])[:4]
+	if !bytes.Equal(b256, checksum) {
+		return nil, ErrBadAddress
+	}
+
+	return b[0 : len(b)-4], nil
+}
+
 func Base58Encode(b []byte) string {
 	x := ParseBytes(b)
 	zero := NewInt(0)
@@ -264,8 +279,34 @@ func Base58Encode(b []byte) string {
 	for i := 0; i < l/2; i++ {
 		base58[i], base58[l-1-i] = base58[l-1-i], base58[i]
 	}
-
 	return string(base58)
+}
+
+func Base58Decode(s string) []byte {
+	// remove ones
+	countZero := 0
+	b := []byte{}
+	for i := 0; i < len(s); i++ {
+		if s[i] != '1' {
+			break
+		}
+		b = append(b, 0)
+		countZero++
+	}
+
+	s = s[countZero:]
+
+	num := NewInt(0)
+	x58 := NewInt(58)
+
+	for i := 0; i < len(s); i++ {
+		num = MulInt(num, x58)
+		m := strings.IndexByte(alphabet, s[i])
+		num = AddInt(num, NewInt(int64(m)))
+	}
+
+	b = append(b, num.Bytes()...)
+	return b
 }
 
 func ReadByetes(r io.Reader, n int) ([]byte, error) {

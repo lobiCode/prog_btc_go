@@ -5,6 +5,9 @@ import (
 	"encoding/hex"
 	"reflect"
 	"testing"
+
+	u "github.com/lobiCode/prog_btc_go/btcutils"
+	c "github.com/lobiCode/prog_btc_go/cryptography"
 )
 
 func TestParseTx(t *testing.T) {
@@ -94,7 +97,7 @@ func TestFee(t *testing.T) {
 	}
 
 	r := bytes.NewReader(inB)
-	result, err := ParseTx(r, true)
+	result, err := ParseTx(r, false)
 	if err != nil {
 		panic(err)
 	}
@@ -120,11 +123,40 @@ func TestLocktime(t *testing.T) {
 	check(uint32(410393), result.Locktime, t)
 }
 
-/*func TestFetchTx(t *testing.T) {*/
-//id := "08e16d81608810565dcaaa8c4ee61b8c840fe59762c3cb01fd21a90cc71d96b3"
-//tx, err := FetchTx(id, true)
-//fmt.Println(tx, err)
-/*}*/
+func TestSigHash(t *testing.T) {
+	tx, err := FetchTx("452c629d67e41baec3ac6f04fe744b4b9617f8f859c63b3002f8684e7a4fee03", false)
+	check(nil, err, t)
+	expected := "27e0c5994dec7824e56dec6b2fcb342eb7cdb0d0957c2fce9882f715e85d81a6"
+	ei, _ := u.ParseInt(expected, 16)
+
+	z, err := tx.SigHash(0)
+	check(nil, err, t)
+
+	zi := u.ParseBytes(z)
+	check(ei, zi, t)
+}
+
+func TestP2pkh(t *testing.T) {
+	tx, _ := FetchTx("452c629d67e41baec3ac6f04fe744b4b9617f8f859c63b3002f8684e7a4fee03", false)
+	check(true, tx.Verify(), t)
+	tx, _ = FetchTx("5418099cc755cb9dd3ebc6cf1a7888ad53a1a3beb5a025bce89eb1bf7f1650a2", true)
+	check(true, tx.Verify(), t)
+}
+
+func TestSignInput(t *testing.T) {
+	key := c.NewPrivateKey(u.NewInt(8675309))
+	in := "010000000199a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d0d00000000ffffffff02408af701000000001976a914d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f88ac80969800000000001976a914507b27411ccf7f16f10297de6cef3f291623eddf88ac00000000"
+	inB, err := hex.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	r := bytes.NewReader(inB)
+	result, err := ParseTx(r, true)
+	check(nil, err, t)
+	check(nil, result.SingInput(0, key), t)
+	expected := "010000000199a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d0d0000006b483045022100ed3bace23c5e17652e174c835fb72bf53ee306b3406a26890221b4cef7500f88022049c75bf1cdd5d10939596a4fc0d18e5328e5e74ca1bcb99a859b40e35fcdfc54012103935581e52c354cd2f484fe8ed83af7a3097005b2f9c60bff71d35bd795f54b67ffffffff02408af701000000001976a914d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f88ac80969800000000001976a914507b27411ccf7f16f10297de6cef3f291623eddf88ac00000000"
+	check(expected, result.Serialize(), t)
+}
 
 func check(expected, recived interface{}, t *testing.T) {
 	t.Helper()
