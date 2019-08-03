@@ -97,6 +97,10 @@ type PrivateKey struct {
 	point  *ec.Point
 }
 
+func (pk *PrivateKey) Point() *ec.Point {
+	return pk.point
+}
+
 func (pk *PrivateKey) Sec(compressed bool) []byte {
 
 	xb := pk.point.GetXbytes()
@@ -223,7 +227,16 @@ func Verify(z *big.Int, signature *Signature, publicKey *ec.Point) bool {
 	return false
 }
 
-func getHash256Int(s string) *big.Int {
+func GetH160Address(address string) ([]byte, error) {
+	b, err := u.DecodeBase58Checksum(address)
+	if err != nil {
+		return nil, err
+	}
+
+	return b[1:], nil
+}
+
+func GetHash256Int(s string) *big.Int {
 	sum := u.Hash256([]byte(s))
 	i := new(big.Int).SetBytes(sum[:])
 

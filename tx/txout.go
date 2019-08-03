@@ -2,6 +2,7 @@ package tx
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/lobiCode/prog_btc_go/script"
@@ -12,6 +13,10 @@ type TxOut struct {
 	ScriptPubKey *script.Script
 }
 
+func (txOut *TxOut) String() string {
+	return fmt.Sprintf(`%d:%s
+`, txOut.Amount, txOut.ScriptPubKey)
+}
 func (txOut *TxOut) Serialize() []byte {
 	amount := make([]byte, 8, 34)
 	binary.LittleEndian.PutUint64(amount, txOut.Amount)

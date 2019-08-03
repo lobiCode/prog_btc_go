@@ -10,8 +10,8 @@ import (
 )
 
 func TestSign(t *testing.T) {
-	z := getHash256Int("Bitcoin Bitcoin")
-	pk := NewPrivateKey(getHash256Int("ifkdafkfkfiasfiodidafpasfjadsf"))
+	z := GetHash256Int("Bitcoin Bitcoin")
+	pk := NewPrivateKey(GetHash256Int("ifkdafkfkfiasfiodidafpasfjadsf"))
 
 	signature := pk.Sign(z)
 
@@ -20,9 +20,9 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignFail(t *testing.T) {
-	z := getHash256Int("Bitcoin Bitcoin")
-	pk1 := NewPrivateKey(getHash256Int("ifkdafkfkfiasfiodidafpasfjadsf"))
-	pk2 := NewPrivateKey(getHash256Int("111899998900"))
+	z := GetHash256Int("Bitcoin Bitcoin")
+	pk1 := NewPrivateKey(GetHash256Int("ifkdafkfkfiasfiodidafpasfjadsf"))
+	pk2 := NewPrivateKey(GetHash256Int("111899998900"))
 
 	signature := pk1.Sign(z)
 
@@ -48,7 +48,7 @@ func TestSignParse(t *testing.T) {
 
 	for _, test := range testCase {
 		t.Run(test.test, func(t *testing.T) {
-			pk := NewPrivateKey(getHash256Int(test.secret))
+			pk := NewPrivateKey(GetHash256Int(test.secret))
 			pub := pk.Sec(test.compressed)
 			parsePub, _ := ParsePublicKey(pub)
 
@@ -86,6 +86,15 @@ func TestDer2(t *testing.T) {
 
 	check(nil, err, t)
 	check(text, sigResult.String(), t)
+}
+
+func TestGetH160Address(t *testing.T) {
+	addr := "mnrVtF8DWjMu839VW3rBfgYaAfKk8983Xf"
+	b, err := GetH160Address(addr)
+	result := hex.EncodeToString(b)
+	expected := "507b27411ccf7f16f10297de6cef3f291623eddf"
+	check(nil, err, t)
+	check(expected, result, t)
 }
 
 func check(expected, recived interface{}, t *testing.T) {

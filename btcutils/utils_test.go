@@ -51,6 +51,34 @@ func TestBase58Encode(t *testing.T) {
 	}
 }
 
+func TestBase58Decode(t *testing.T) {
+	testCase := []struct {
+		test     string
+		expected []byte
+		s        string
+	}{
+		{"t 1", []byte("\x00\x00"), "11"},
+		{"t 2", []byte("yeijskloilk49"), "B7TY7kdDFMU2gmpVqr"},
+	}
+
+	for _, test := range testCase {
+		t.Run(test.test, func(t *testing.T) {
+			result := Base58Decode(test.s)
+			check(test.expected, result, t)
+		})
+	}
+}
+
+func TestED(t *testing.T) {
+	b, _ := hex.DecodeString("507b27411ccf7f16f10297de6cef3f291623eddf")
+	s := EncodeBase58Checksum(b)
+	d, err := DecodeBase58Checksum(s)
+
+	check(nil, err, t)
+	check(b, d, t)
+
+}
+
 func check(expected, recived interface{}, t *testing.T) {
 	t.Helper()
 	if !reflect.DeepEqual(recived, expected) {

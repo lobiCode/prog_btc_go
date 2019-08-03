@@ -1,5 +1,11 @@
 package script
 
+import (
+	"math/big"
+
+	u "github.com/lobiCode/prog_btc_go/btcutils"
+)
+
 type stack struct {
 	s [][]byte
 }
@@ -75,7 +81,7 @@ func newStack(capacity int) *stack {
 	return &stack{s}
 }
 
-func Evaluate(z string, scriptSig, scriptPubKey *Script) bool {
+func Evaluate(z []byte, scriptSig, scriptPubKey *Script) bool {
 	cmds := newStack(len(scriptSig.Cmds) + len(scriptPubKey.Cmds))
 	cmds.push(scriptSig.Cmds...)
 	cmds.push(scriptPubKey.Cmds...)
@@ -83,10 +89,10 @@ func Evaluate(z string, scriptSig, scriptPubKey *Script) bool {
 	realStack := newStack(0)
 	altStack := newStack(0)
 
-	return evaluate(z, cmds, realStack, altStack)
+	return evaluate(u.ParseBytes(z), cmds, realStack, altStack)
 }
 
-func evaluate(z string, cmds, realStack, altStack *stack) bool {
+func evaluate(z *big.Int, cmds, realStack, altStack *stack) bool {
 	for cmds.length() > 0 {
 		cmd := cmds.popFirst()
 

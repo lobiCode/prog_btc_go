@@ -2,9 +2,10 @@ package script
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
+	"strings"
 
 	u "github.com/lobiCode/prog_btc_go/btcutils"
 )
@@ -59,8 +60,19 @@ func (s *Script) Serialize() []byte {
 }
 
 func (s *Script) String() string {
-	return fmt.Sprintf("cmds: %b", s.Cmds)
+	outs := []string{}
+	for _, v := range s.Cmds {
+		if len(v) == 1 {
+			if out := GetOpCodeName(v[0]); out != "" {
+				outs = append(outs, out)
+				continue
+			}
+		}
+		outs = append(outs, hex.EncodeToString(v))
+	}
+	return strings.Join(outs, " ")
 }
+
 func Parse(r io.Reader) (*Script, error) {
 	n, err := u.ReadVariant(r)
 	if err != nil {
