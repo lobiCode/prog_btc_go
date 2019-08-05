@@ -82,7 +82,7 @@ txouts:
 		tx.Version, tx.TxIns, tx.TxOuts)
 }
 
-func (tx *Tx) SigHash(replaceScriptSig int) ([]byte, error) {
+func (tx *Tx) SigHash(replaceScriptSig int, redeemScript *script.Script) ([]byte, error) {
 	result := []byte{}
 
 	result = append(result, tx.serializeVersion()...)
@@ -92,7 +92,7 @@ func (tx *Tx) SigHash(replaceScriptSig int) ([]byte, error) {
 		if i == replaceScriptSig {
 			ok = true
 		}
-		txInSer, err := txIn.SerializeSigHash(ok, tx.Testnet)
+		txInSer, err := txIn.SerializeSigHash(ok, tx.Testnet, redeemScript)
 		if err != nil {
 			return nil, err
 		}
@@ -129,13 +129,27 @@ func (tx *Tx) Verify() bool {
 	return true
 }
 
+func (tx *Tx) getReedemScript(replaceScriptSig int) (*script.Script, error) {
+	return nil, nil
+}
+
 func (tx *Tx) verifyInput(replaceScriptSig int) bool {
-	z, err := tx.SigHash(replaceScriptSig)
+
+	scriptPubKey, err := tx.TxIns[replaceScriptSig].ScriptPubKey(tx.Testnet)
 	if err != nil {
 		return false
 	}
 
-	scriptPubKey, err := tx.TxIns[replaceScriptSig].ScriptPubKey(tx.Testnet)
+	var redeemScript *script.Script
+	if scriptPubKey.IsP2shScriptPubkeys() {
+		r, err := tx.TxIns[replaceScriptSig].ScriptSig.GetRedeemScript()
+		if err != nil {
+			return false
+		}
+		redeemScript = r
+	}
+
+	z, err := tx.SigHash(replaceScriptSig, redeemScript)
 	if err != nil {
 		return false
 	}
@@ -145,9 +159,11 @@ func (tx *Tx) verifyInput(replaceScriptSig int) bool {
 }
 
 func (tx *Tx) SingInput(i int, key *c.PrivateKey) error {
+	redeemScript, err := tx.getReedemScript(i)
+
 	sec := key.Sec(true)
 	v := tx.TxIns[i]
-	z, err := tx.SigHash(i)
+	z, err := tx.SigHash(i, redeemScript)
 	if err != nil {
 		return err
 	}

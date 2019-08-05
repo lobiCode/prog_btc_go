@@ -1,6 +1,7 @@
 package script
 
 import (
+	"bytes"
 	"math/big"
 
 	u "github.com/lobiCode/prog_btc_go/btcutils"
@@ -111,6 +112,17 @@ func evaluate(z *big.Int, cmds, realStack, altStack *stack) bool {
 			}
 		} else {
 			realStack.push(cmd)
+			if isP2sh(cmds.s) {
+				if !evaluateP2sk(z, cmds, realStack, altStack) {
+					return false
+				}
+				redeemScript := append(u.EncodeVariant(len(cmd)), cmd...)
+				script, err := Parse(bytes.NewReader(redeemScript))
+				if err != nil {
+					return false
+				}
+				cmds.push(script.Cmds...)
+			}
 		}
 	}
 
@@ -119,7 +131,44 @@ func evaluate(z *big.Int, cmds, realStack, altStack *stack) bool {
 	}
 
 	i, err := decodeNum(realStack.pop())
+	// TODO
 	if err != nil || i != 1 {
+		return false
+	}
+
+	return true
+}
+
+func evaluateP2sk(z *big.Int, cmds, realStack, altStack *stack) bool {
+	cmds.pop()
+	h160 := cmds.pop()
+	if !opHash160(z, cmds, realStack, altStack) {
+		return false
+	}
+
+	realStack.push(h160)
+
+	if !opEqual(z, cmds, realStack, altStack) {
+		return false
+	}
+
+	return opVerify(z, cmds, realStack, altStack)
+}
+
+func isP2sh(cmds [][]byte) bool {
+	if len(cmds) != 3 {
+		return false
+	}
+
+	if !bytes.Equal(cmds[0], []byte{0xa9}) {
+		return false
+	}
+
+	if len(cmds[1]) != 20 {
+		return false
+	}
+
+	if !bytes.Equal(cmds[2], []byte{0x87}) {
 		return false
 	}
 

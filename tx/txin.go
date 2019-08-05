@@ -66,27 +66,27 @@ func (txIn *TxIn) serializePreTxIdx() []byte {
 }
 
 func (txIn *TxIn) serializeSequence() []byte {
-	/*if txIn.Sequence == 0 {*/
-	//return []byte{}
-	//}
-
 	sequence := make([]byte, 4)
 	binary.LittleEndian.PutUint32(sequence, txIn.Sequence)
 
 	return sequence
 }
 
-func (txIn *TxIn) SerializeSigHash(replaceScriptSig, testnet bool) ([]byte, error) {
+func (txIn *TxIn) SerializeSigHash(replaceScriptSig, testnet bool, redeemScript *script.Script) ([]byte, error) {
 	result := []byte{}
 	result = append(result, txIn.serializePreTxId()...)
 	result = append(result, txIn.serializePreTxIdx()...)
 
 	if replaceScriptSig {
-		scriptPubKey, err := txIn.ScriptPubKey(testnet)
-		if err != nil {
-			return nil, err
+		if redeemScript != nil {
+			result = append(result, redeemScript.Serialize()...)
+		} else {
+			scriptPubKey, err := txIn.ScriptPubKey(testnet)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, scriptPubKey.Serialize()...)
 		}
-		result = append(result, scriptPubKey.Serialize()...)
 	} else {
 		result = append(result, 0x00)
 	}

@@ -309,6 +309,28 @@ func Base58Decode(s string) []byte {
 	return b
 }
 
+func H160ToP2pkhAddress(h160 []byte, testnet bool) string {
+	address := make([]byte, 1, len(h160)+1)
+	if testnet {
+		address[0] = 0x6f
+	} else {
+		address[0] = 0x00
+	}
+
+	return EncodeBase58Checksum(address)
+}
+
+func H160ToP2shAddress(h160 []byte, testnet bool) string {
+	address := make([]byte, 1, len(h160)+1)
+	if testnet {
+		address[0] = 0xc4
+	} else {
+		address[0] = 0x05
+	}
+
+	return EncodeBase58Checksum(address)
+}
+
 func ReadByetes(r io.Reader, n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := io.ReadFull(r, b)

@@ -245,6 +245,65 @@ func opSha1(z *big.Int, cmds, realStack, altStack *stack) bool {
 	return true
 }
 
+func opCheckmultisig(z *big.Int, cmds, realStack, altStack *stack) bool {
+	if realStack.length() < 1 {
+		return false
+	}
+
+	e := realStack.pop()
+	i, err := decodeNum(e)
+	if err != nil || int64(realStack.length()) < i+1 || i > 15 {
+		return false
+	}
+
+	publicKeys := make([][]byte, 0, i)
+	for ; i > 0; i-- {
+		publicKeys = append(publicKeys, realStack.pop())
+	}
+
+	e = realStack.pop()
+	i, err = decodeNum(e)
+	if err != nil || int64(realStack.length()) < i+1 || i > 15 {
+		return false
+	}
+
+	sigs := make([][]byte, 0, i)
+	for ; i > 0; i-- {
+		sigs = append(sigs, realStack.pop())
+	}
+
+	realStack.pop()
+
+	if len(sigs) > len(publicKeys) {
+		return false
+	}
+
+SIG:
+	for i, sig := range sigs {
+		for j := i; j < len(publicKeys); j++ {
+			publicKey, err := c.ParsePublicKey(publicKeys[j])
+			if err != nil {
+				return false
+			}
+			signature, err := c.ParseSignature(sig[:len(sig)-1])
+			if err != nil {
+				return false
+			}
+
+			if c.Verify(z, signature, publicKey) {
+				break SIG
+			}
+
+			return false
+		}
+
+	}
+
+	_add_number(1, realStack)
+
+	return true
+}
+
 func encodeNum(i int64) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, i)
@@ -267,34 +326,35 @@ func decodeNum(b []byte) (int64, error) {
 }
 
 var operation_functions = map[string]OperationFunc{
-	"OP_DUP":         opDup,
-	"OP_HASH256":     opHash256,
-	"OP_HASH160":     opHash160,
-	"OP_CHECKSIG":    opChecksig,
-	"OP_EQUAL":       opEqual,
-	"OP_EQUALVERIFY": opEqualverify,
-	"OP_VERIFY":      opVerify,
-	"OP_2DUP":        op2dup,
-	"OP_SWAP":        opSwap,
-	"OP_NOT":         opNot,
-	"OP_SHA1":        opSha1,
-	"OP_0":           op0,
-	"OP_1":           op1,
-	"OP_2":           op2,
-	"OP_3":           op3,
-	"OP_4":           op4,
-	"OP_5":           op5,
-	"OP_6":           op6,
-	"OP_7":           op7,
-	"OP_8":           op8,
-	"OP_9":           op9,
-	"OP_10":          op10,
-	"OP_11":          op11,
-	"OP_12":          op12,
-	"OP_13":          op13,
-	"OP_14":          op14,
-	"OP_15":          op15,
-	"OP_16":          op16,
+	"OP_DUP":           opDup,
+	"OP_HASH256":       opHash256,
+	"OP_HASH160":       opHash160,
+	"OP_CHECKSIG":      opChecksig,
+	"OP_EQUAL":         opEqual,
+	"OP_EQUALVERIFY":   opEqualverify,
+	"OP_VERIFY":        opVerify,
+	"OP_2DUP":          op2dup,
+	"OP_SWAP":          opSwap,
+	"OP_NOT":           opNot,
+	"OP_SHA1":          opSha1,
+	"OP_0":             op0,
+	"OP_1":             op1,
+	"OP_2":             op2,
+	"OP_3":             op3,
+	"OP_4":             op4,
+	"OP_5":             op5,
+	"OP_6":             op6,
+	"OP_7":             op7,
+	"OP_8":             op8,
+	"OP_9":             op9,
+	"OP_10":            op10,
+	"OP_11":            op11,
+	"OP_12":            op12,
+	"OP_13":            op13,
+	"OP_14":            op14,
+	"OP_15":            op15,
+	"OP_16":            op16,
+	"OP_CHECKMULTISIG": opCheckmultisig,
 }
 
 var op_codes_names = map[byte]string{
