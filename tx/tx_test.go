@@ -129,7 +129,7 @@ func TestSigHash(t *testing.T) {
 	expected := "27e0c5994dec7824e56dec6b2fcb342eb7cdb0d0957c2fce9882f715e85d81a6"
 	ei, _ := u.ParseInt(expected, 16)
 
-	z, err := tx.SigHash(0)
+	z, err := tx.SigHash(0, nil)
 	check(nil, err, t)
 
 	zi := u.ParseBytes(z)
@@ -140,6 +140,11 @@ func TestP2pkh(t *testing.T) {
 	tx, _ := FetchTx("452c629d67e41baec3ac6f04fe744b4b9617f8f859c63b3002f8684e7a4fee03", false)
 	check(true, tx.Verify(), t)
 	tx, _ = FetchTx("5418099cc755cb9dd3ebc6cf1a7888ad53a1a3beb5a025bce89eb1bf7f1650a2", true)
+	check(true, tx.Verify(), t)
+}
+
+func TesP2sh(t *testing.T) {
+	tx, _ := FetchTx("46df1a9484d0a81d03ce0ee543ab6e1a23ed06175c104a178268fad381216c2b", false)
 	check(true, tx.Verify(), t)
 }
 

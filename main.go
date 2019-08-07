@@ -39,7 +39,7 @@ func main() {
 		ScriptPubKey: script.P2pkh(targetH1602),
 	}
 	txOut3 := &tx.TxOut{
-		Amount:       uint64(0.04115 * 100000000),
+		Amount:       uint64(0.03115 * 100000000),
 		ScriptPubKey: script.P2pkh(targetH1603),
 	}
 

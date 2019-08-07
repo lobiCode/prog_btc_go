@@ -1,6 +1,7 @@
 package script
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -57,6 +58,14 @@ func (s *Script) Serialize() []byte {
 		result[i] = v
 	}
 	return result
+}
+
+func (s *Script) IsP2shScriptPubkeys() bool {
+	return isP2sh(s.Cmds)
+}
+
+func (s *Script) GetRedeemScript() (*Script, error) {
+	return Parse(bytes.NewReader(s.Cmds[2]))
 }
 
 func (s *Script) String() string {
