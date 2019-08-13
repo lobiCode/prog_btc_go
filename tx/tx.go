@@ -218,6 +218,7 @@ func ParseTx(r io.Reader, testnet bool) (*Tx, error) {
 		return nil, err
 	}
 	version := binary.LittleEndian.Uint32(b)
+
 	// inTx number
 	n, err := u.ReadVariant(r)
 	if err != nil {
@@ -258,6 +259,27 @@ func ParseTx(r io.Reader, testnet bool) (*Tx, error) {
 	tx := &Tx{version, txIns, txOuts, locktime, testnet}
 
 	return tx, nil
+}
+
+func (tx *Tx) IsCoinbase() bool {
+	if len(tx.TxIns) != 1 {
+		return false
+	}
+
+	if tx.TxIns[0].PreTxId != "0000000000000000000000000000000000000000000000000000000000000000" {
+		return false
+	}
+
+	if tx.TxIns[0].PreTxIdx != 0xffffffff {
+		return false
+	}
+
+	return true
+}
+
+func (tx *Tx) CoinbaseHeight() (int64, error) {
+	b := tx.TxIns[0].ScriptSig.Cmds[0]
+	return u.DecodeNumLittleEndian(b)
 }
 
 func FetchTx(txId string, testnet bool) (*Tx, error) {

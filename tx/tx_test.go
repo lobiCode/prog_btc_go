@@ -163,6 +163,32 @@ func TestSignInput(t *testing.T) {
 	check(expected, result.Serialize(), t)
 }
 
+func TestIsCoinbase(t *testing.T) {
+	in := "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff5e03d71b07254d696e656420627920416e74506f6f6c20626a31312f4542312f4144362f43205914293101fabe6d6d678e2c8c34afc36896e7d9402824ed38e856676ee94bfdb0c6c4bcd8b2e5666a0400000000000000c7270000a5e00e00ffffffff01faf20b58000000001976a914338c84849423992471bffb1a54a8d9b1d69dc28a88ac00000000"
+	inB, err := hex.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	r := bytes.NewReader(inB)
+	result, err := ParseTx(r, false)
+	check(nil, err, t)
+	check(true, result.IsCoinbase(), t)
+}
+
+func TestCoinbaseHeight(t *testing.T) {
+	in := "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff5e03d71b07254d696e656420627920416e74506f6f6c20626a31312f4542312f4144362f43205914293101fabe6d6d678e2c8c34afc36896e7d9402824ed38e856676ee94bfdb0c6c4bcd8b2e5666a0400000000000000c7270000a5e00e00ffffffff01faf20b58000000001976a914338c84849423992471bffb1a54a8d9b1d69dc28a88ac00000000"
+	inB, err := hex.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	r := bytes.NewReader(inB)
+	result, err := ParseTx(r, false)
+	check(nil, err, t)
+	height, err := result.CoinbaseHeight()
+	check(nil, err, t)
+	check(int64(465879), height, t)
+}
+
 func check(expected, recived interface{}, t *testing.T) {
 	t.Helper()
 	if !reflect.DeepEqual(recived, expected) {

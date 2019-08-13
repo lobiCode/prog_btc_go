@@ -340,3 +340,103 @@ func ReadByetes(r io.Reader, n int) ([]byte, error) {
 
 	return b, nil
 }
+
+func EncodeNum(i int64) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, i)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func DecodeNum(b []byte) (int64, error) {
+	var i int64
+	buf := bytes.NewReader(b)
+	err := binary.Read(buf, binary.BigEndian, &i)
+	if err != nil {
+		return 0, err
+	}
+
+	return i, nil
+}
+
+func DecodeNumLittleEndian(b []byte) (int64, error) {
+	var i int64
+	bb := make([]byte, 8)
+	copy(bb, b)
+	buf := bytes.NewReader(bb)
+	err := binary.Read(buf, binary.LittleEndian, &i)
+	if err != nil {
+		return 0, err
+	}
+
+	return i, nil
+}
+
+func Read(r io.Reader, u int64) ([]byte, error) {
+	b := make([]byte, u)
+	_, err := io.ReadFull(r, b)
+	return b, err
+}
+
+func BitsToTarget(bits []byte) *big.Int {
+	coefficient, err := DecodeNumLittleEndian(bits[:3])
+	// TODO
+	if err != nil {
+		panic(err)
+	}
+	exp := NewInt(int64(bits[3]))
+
+	target := MulInt(NewInt(coefficient), PowInt(NewInt(256), SubInt(exp, NewInt(3))))
+	return target
+}
+
+func TargetToBits(target *big.Int) []byte {
+	targetB := target.Bytes()
+	targetB = bytes.TrimLeftFunc(targetB, IsZeroPrefix)
+
+	var exp int
+	coefficient := make([]byte, 3, 4)
+
+	if targetB[0] == 0x7f {
+		exp = len(targetB) + 1
+		coefficient[0] = 0x00
+		copy(coefficient[1:], targetB[:2])
+	} else {
+		exp = len(targetB)
+		copy(coefficient, targetB)
+	}
+	ReverseBytes(coefficient)
+	coefficient = append(coefficient, byte(exp))
+
+	return coefficient
+}
+
+func IsZeroPrefix(r rune) bool {
+	if uint32(r) == uint32(0) {
+		return true
+	}
+	return false
+}
+
+var (
+	TWO_WEEKS   int64 = 60 * 60 * 24 * 14
+	EIGHT_WEEKS int64 = TWO_WEEKS * 4
+	HALF_WEEK   int64 = TWO_WEEKS / 4
+)
+
+func CalculateNewBits(timeDiff int64, prevBits []byte) []byte {
+
+	if timeDiff > EIGHT_WEEKS {
+		timeDiff = EIGHT_WEEKS
+	} else if timeDiff < HALF_WEEK {
+		timeDiff = HALF_WEEK
+	}
+
+	prevTarger := BitsToTarget(prevBits)
+	newTarget := DivInt(MulInt(prevTarger, NewInt(timeDiff)), NewInt(TWO_WEEKS))
+
+	return TargetToBits(newTarget)
+}

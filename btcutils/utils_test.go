@@ -78,6 +78,21 @@ func TestED(t *testing.T) {
 	check(b, d, t)
 
 }
+func TestBitsToTarget(t *testing.T) {
+	bits, _ := hex.DecodeString("e93c0118")
+	target := BitsToTarget(bits)
+	check("30353962581764818649842367179120467226026534727449575424", target.String(), t)
+}
+
+func TestCalculateNewBits(t *testing.T) {
+	prevBits, _ := hex.DecodeString("54d80118")
+	timeDiff := int64(302400)
+	expected, _ := hex.DecodeString("00157617")
+
+	result := CalculateNewBits(timeDiff, prevBits)
+
+	check(expected, result, t)
+}
 
 func check(expected, recived interface{}, t *testing.T) {
 	t.Helper()

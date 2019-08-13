@@ -130,7 +130,7 @@ func evaluate(z *big.Int, cmds, realStack, altStack *stack) bool {
 		return false
 	}
 
-	i, err := decodeNum(realStack.pop())
+	i, err := u.DecodeNum(realStack.pop())
 	// TODO
 	if err != nil || i != 1 {
 		return false

@@ -23,7 +23,7 @@ type Signature struct {
 
 func (sig *Signature) Der() []byte {
 	rbin := sig.r.Bytes()
-	rbin = bytes.TrimLeftFunc(rbin, isZeroPrefix)
+	rbin = bytes.TrimLeftFunc(rbin, u.IsZeroPrefix)
 	if rbin[0]&0x80 > 0 {
 		rbin = append([]byte{0x00}, rbin...)
 	}
@@ -31,7 +31,7 @@ func (sig *Signature) Der() []byte {
 	result := append([]byte{0x02, byte(len(rbin))}, rbin...)
 
 	sbin := sig.s.Bytes()
-	sbin = bytes.TrimLeftFunc(sbin, isZeroPrefix)
+	sbin = bytes.TrimLeftFunc(sbin, u.IsZeroPrefix)
 	if sbin[0] >= 0x80 {
 		sbin = append([]byte{0x00}, sbin...)
 	}
@@ -252,11 +252,4 @@ func calculateY(x *ff.Element) *ff.Element {
 	y := ec.CalcEcRightSide(x, ec.BTCCurve.A, ec.BTCCurve.B)
 	y = ff.Pow(y, u.DivInt(u.AddInt(ec.BTCCurve.P, u.NewInt(1)), u.NewInt(4)))
 	return y
-}
-
-func isZeroPrefix(r rune) bool {
-	if uint32(r) == uint32(0) {
-		return true
-	}
-	return false
 }
