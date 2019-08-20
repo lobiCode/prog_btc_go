@@ -3,7 +3,6 @@ package script
 import (
 	"bytes"
 	"crypto/sha1"
-	"encoding/binary"
 	"math/big"
 
 	u "github.com/lobiCode/prog_btc_go/btcutils"
@@ -13,7 +12,7 @@ import (
 type OperationFunc = func(z *big.Int, cmds, realStack, altStack *stack) bool
 
 func _add_number(i int64, realStack *stack) bool {
-	b, err := encodeNum(i)
+	b, err := u.EncodeNum(i)
 	if err != nil {
 		return false
 	}
@@ -172,7 +171,7 @@ func opVerify(z *big.Int, cmds, realStack, altStack *stack) bool {
 	}
 
 	e := realStack.pop()
-	i, err := decodeNum(e)
+	i, err := u.DecodeNum(e)
 	if err != nil {
 		return false
 	}
@@ -219,7 +218,7 @@ func opNot(z *big.Int, cmds, realStack, altStack *stack) bool {
 	}
 	e := realStack.pop()
 
-	i, err := decodeNum(e)
+	i, err := u.DecodeNum(e)
 	if err != nil {
 		return false
 	}
@@ -251,7 +250,7 @@ func opCheckmultisig(z *big.Int, cmds, realStack, altStack *stack) bool {
 	}
 
 	e := realStack.pop()
-	i, err := decodeNum(e)
+	i, err := u.DecodeNum(e)
 	if err != nil || int64(realStack.length()) < i+1 || i > 15 {
 		return false
 	}
@@ -262,7 +261,7 @@ func opCheckmultisig(z *big.Int, cmds, realStack, altStack *stack) bool {
 	}
 
 	e = realStack.pop()
-	i, err = decodeNum(e)
+	i, err = u.DecodeNum(e)
 	if err != nil || int64(realStack.length()) < i+1 || i > 15 {
 		return false
 	}
@@ -302,27 +301,6 @@ SIG:
 	_add_number(1, realStack)
 
 	return true
-}
-
-func encodeNum(i int64) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.BigEndian, i)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func decodeNum(b []byte) (int64, error) {
-	var i int64
-	buf := bytes.NewReader(b)
-	err := binary.Read(buf, binary.BigEndian, &i)
-	if err != nil {
-		return 0, err
-	}
-
-	return i, nil
 }
 
 var operation_functions = map[string]OperationFunc{
