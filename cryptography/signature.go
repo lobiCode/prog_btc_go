@@ -65,7 +65,7 @@ func ParseSignature(sig []byte) (*Signature, error) {
 			return nil, err
 		}
 		if i == 3 || i == 5 {
-			b, err = u.ReadByetes(br, int(b[0]))
+			b, err = u.ReadByetes(br, int64(b[0]))
 			if err != nil {
 				return nil, err
 			}

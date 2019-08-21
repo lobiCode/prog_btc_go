@@ -331,7 +331,7 @@ func H160ToP2shAddress(h160 []byte, testnet bool) string {
 	return EncodeBase58Checksum(address)
 }
 
-func ReadByetes(r io.Reader, n int) ([]byte, error) {
+func ReadByetes(r io.Reader, n int64) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := io.ReadFull(r, b)
 	if err != nil {
@@ -373,6 +373,50 @@ func DecodeNumLittleEndian(b []byte) (int64, error) {
 	}
 
 	return i, nil
+}
+
+func EncodeNumLittleEndian(i interface{}) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.LittleEndian, i)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func MustEncodeNumLittleEndian(i interface{}) []byte {
+	b, err := EncodeNumLittleEndian(i)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func EncodeNumBigEndian(i interface{}) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, i)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func MustEncodeNumBigEndian(i interface{}) []byte {
+	b, err := EncodeNumBigEndian(i)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func DecodeInterfaceNumLittleEndian(r io.Reader, i interface{}) error {
+	return binary.Read(r, binary.LittleEndian, i)
+}
+
+func DecodeInterfaceNumBigEndian(r io.Reader, i interface{}) error {
+	return binary.Read(r, binary.BigEndian, i)
 }
 
 func Read(r io.Reader, u int64) ([]byte, error) {

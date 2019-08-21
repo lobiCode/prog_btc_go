@@ -19,12 +19,8 @@ type Block struct {
 }
 
 func Parse(r io.Reader) (*Block, error) {
-
-	b, err := u.Read(r, 4)
-	if err != nil {
-		return nil, err
-	}
-	version := binary.LittleEndian.Uint32(b)
+	var version uint32
+	err := u.DecodeInterfaceNumLittleEndian(r, &version)
 
 	prevBlock, err := u.Read(r, 32)
 	if err != nil {
@@ -38,11 +34,8 @@ func Parse(r io.Reader) (*Block, error) {
 	}
 	u.ReverseBytes(merkleRoot)
 
-	b, err = u.Read(r, 4)
-	if err != nil {
-		return nil, err
-	}
-	timestamp := binary.LittleEndian.Uint32(b)
+	var timestamp uint32
+	err = u.DecodeInterfaceNumLittleEndian(r, &timestamp)
 
 	bits, err := u.Read(r, 4)
 	if err != nil {
@@ -64,6 +57,14 @@ func Parse(r io.Reader) (*Block, error) {
 	}
 	return block, nil
 
+}
+
+func (b *Block) String() string {
+	return b.Hash()
+}
+
+func (b *Block) GetPrevBlock() string {
+	return hex.EncodeToString(b.PrevBlock)
 }
 
 func (b *Block) serializeVersion() []byte {
@@ -99,10 +100,16 @@ func (b *Block) serialize() []byte {
 	return result
 }
 
+func (b *Block) HashBytes() []byte {
+	src := u.Hash256(b.serialize())
+	u.ReverseBytes(src)
+	dst := make([]byte, hex.EncodedLen(len(src)))
+	hex.Encode(dst, src)
+	return dst
+}
+
 func (b *Block) Hash() string {
-	result := u.Hash256(b.serialize())
-	u.ReverseBytes(result)
-	return hex.EncodeToString(result)
+	return string(b.HashBytes())
 }
 
 func (b *Block) Bip9() bool {
