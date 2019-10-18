@@ -217,6 +217,12 @@ func ReadVariant(r io.Reader) (uint64, error) {
 
 	return n, nil
 }
+func CopybAndReverse(b []byte) []byte {
+	tmp := Copyb(b)
+	ReverseBytes(tmp)
+
+	return tmp
+}
 
 func Copyb(b []byte) []byte {
 	tmp := make([]byte, len(b))
@@ -483,4 +489,16 @@ func CalculateNewBits(timeDiff int64, prevBits []byte) []byte {
 	newTarget := DivInt(MulInt(prevTarger, NewInt(timeDiff)), NewInt(TWO_WEEKS))
 
 	return TargetToBits(newTarget)
+}
+
+func ByteToBits(b []byte) []byte {
+	bits := make([]byte, 0, len(b)*8)
+
+	for _, v := range b {
+		for i := 0; i < 8; i++ {
+			bits = append(bits, v&1)
+			v >>= 1
+		}
+	}
+	return bits
 }

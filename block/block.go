@@ -1,12 +1,14 @@
 package block
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"io"
 	"math/big"
 
 	u "github.com/lobiCode/prog_btc_go/btcutils"
+	"github.com/lobiCode/prog_btc_go/merkletree"
 )
 
 type Block struct {
@@ -16,6 +18,22 @@ type Block struct {
 	Timestapm  uint32
 	Bits       []byte
 	Nonce      []byte
+	TxHashes   [][]byte
+}
+
+func (b *Block) ValidateMerkleRoot() bool {
+	for _, val := range b.TxHashes {
+		u.ReverseBytes(val)
+	}
+
+	merkleRoot := merkletree.MerkleRoot(b.TxHashes)
+	u.ReverseBytes(merkleRoot[0])
+
+	if bytes.Compare(merkleRoot[0], b.MerkleRoot) == 0 {
+		return true
+	}
+
+	return false
 }
 
 func Parse(r io.Reader) (*Block, error) {
@@ -55,8 +73,8 @@ func Parse(r io.Reader) (*Block, error) {
 		Bits:       bits,
 		Nonce:      nonce,
 	}
-	return block, nil
 
+	return block, nil
 }
 
 func (b *Block) String() string {

@@ -49,6 +49,7 @@ var (
 	HeadersCommand    CommandMsg = []byte("headers")
 	PongCommand       CommandMsg = []byte("pong")
 	PingCommand       CommandMsg = []byte("ping")
+	MerkleCommand     CommandMsg = []byte("merkleblock")
 )
 
 type NetAddr struct {
@@ -76,6 +77,21 @@ type Message interface {
 	Serialize() []byte
 	Parse(io.Reader) error
 	GetCommand() CommandMsg
+}
+
+type MerkleMessage struct {
+}
+
+func (m *MerkleMessage) GetCommand() CommandMsg {
+	return MerkleCommand
+}
+
+func (m *MerkleMessage) Serialize() []byte {
+	return nil
+}
+
+func (m *MerkleMessage) Parse(r io.Reader) error {
+	return nil
 }
 
 type VesrionMessage struct {
