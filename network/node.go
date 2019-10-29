@@ -41,15 +41,11 @@ func (n *Node) Send(message Message) error {
 }
 
 func (n *Node) WaitForCommand(commands ...CommandMsg) (*Envelope, error) {
-	fmt.Println(string(commands[0]))
 	for {
-		fmt.Println("bbbbbbbbbb")
 		envelope, err := n.Read()
 		if err != nil {
-			fmt.Println("rrrrrrrrrr")
 			return nil, err
 		}
-		fmt.Println(string(envelope.Command), string(commands[0]))
 
 		if envelope.Command.Eqs(commands...) {
 			return envelope, nil
@@ -108,7 +104,7 @@ func Handshake(node *Node) error {
 		Nonce:           0,
 		UserAgent:       "/kr neki/",
 		Height:          0,
-		Relay:           false,
+		Relay:           true,
 	}
 
 	err := node.Send(vm)
