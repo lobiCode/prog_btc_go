@@ -174,3 +174,27 @@ func isP2sh(cmds [][]byte) bool {
 
 	return true
 }
+
+func isP2pkh(cmds [][]byte) bool {
+	if len(cmds) != 5 {
+		return false
+	}
+
+	if !bytes.Equal(cmds[0], []byte{0x76}) {
+		return false
+	}
+
+	if !bytes.Equal(cmds[1], []byte{0xa9}) {
+		return false
+	}
+
+	if !bytes.Equal(cmds[3], []byte{0x88}) {
+		return false
+	}
+
+	if !bytes.Equal(cmds[4], []byte{0xac}) {
+		return false
+	}
+
+	return true
+}

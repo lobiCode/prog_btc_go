@@ -60,7 +60,7 @@ func TestSignParse(t *testing.T) {
 func TestAddress(t *testing.T) {
 	secret, _ := u.ParseInt("0x12345deadbeef", 0)
 	pk := NewPrivateKey(secret)
-	address := pk.Address(true, false)
+	address := pk.AddressP2pkh(true, false)
 	check("1F1Pn2y6pDb68E5nYJJeba4TLg2U7B6KF1", address, t)
 }
 

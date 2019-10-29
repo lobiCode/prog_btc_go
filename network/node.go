@@ -2,12 +2,11 @@ package network
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"strings"
 	"time"
-
-	"github.com/lobiCode/prog_btc_go/block"
 )
 
 type Node struct {
@@ -41,14 +40,18 @@ func (n *Node) Send(message Message) error {
 	return nil
 }
 
-func (n *Node) WaitForCommand(command CommandMsg) (*Envelope, error) {
+func (n *Node) WaitForCommand(commands ...CommandMsg) (*Envelope, error) {
+	fmt.Println(string(commands[0]))
 	for {
+		fmt.Println("bbbbbbbbbb")
 		envelope, err := n.Read()
 		if err != nil {
+			fmt.Println("rrrrrrrrrr")
 			return nil, err
 		}
+		fmt.Println(string(envelope.Command), string(commands[0]))
 
-		if envelope.Command.Eq(command) {
+		if envelope.Command.Eqs(commands...) {
 			return envelope, nil
 		}
 
@@ -139,44 +142,44 @@ func Handshake(node *Node) error {
 	return nil
 }
 
-func GetHeaders(firstBlock *block.Block, node *Node) error {
+func GetHeaders(firstBlock string, node *Node) (*HeadersMessage, error) {
+	b, _ := hex.DecodeString(firstBlock)
 	getHeadersMessage := &GetHeadersMessage{
 		ProtocolVersion: 70015,
-		StartBlock:      [][]byte{firstBlock.HashBytes()},
+		StartBlock:      [][]byte{b},
 	}
 
 	err := node.Send(getHeadersMessage)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	envelope, err := node.WaitForCommand(HeadersCommand)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	headersMessage := &HeadersMessage{}
-	err = headersMessage.Parse(envelope.GetStream())
+	err = headersMessage.Parse(envelope.GetStream(), node.testnet)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	prevHash := firstBlock.Hash()
+	prevHash := firstBlock
 
 	for _, block := range headersMessage.Blocks {
 		if !block.CheckPow() {
-			return fmt.Errorf("bad proof of work at block %s", block.Hash())
+			return nil, fmt.Errorf("bad proof of work at block %s", block.Hash())
 		}
 
 		hash := block.Hash()
 		if strings.Compare(prevHash, block.GetPrevBlock()) != 0 {
-			return fmt.Errorf("discontinuous at block %s", hash)
+			return nil, fmt.Errorf("discontinuous at block %s", hash)
 		}
-		fmt.Println(prevHash, block.GetPrevBlock(), block)
 		prevHash = hash
 
 		// TODO
 	}
 
-	return nil
+	return headersMessage, nil
 }

@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/lobiCode/prog_btc_go/block"
+	"github.com/lobiCode/prog_btc_go/bloom"
 	u "github.com/lobiCode/prog_btc_go/btcutils"
+	"github.com/lobiCode/prog_btc_go/merkletree"
+	"github.com/lobiCode/prog_btc_go/tx"
 )
 
 var (
@@ -35,11 +38,35 @@ func (c CommandMsg) Eq(command CommandMsg) bool {
 	return false
 }
 
+func (c CommandMsg) Eqs(commands ...CommandMsg) bool {
+	for _, command := range commands {
+		if c.Eq(command) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c CommandMsg) Encode() []byte {
 	command := make([]byte, 12)
 	copy(command, c)
 
 	return command
+}
+
+func (c CommandMsg) GetMessage(r io.Reader, testnet bool) (Message, error) {
+	var m Message
+
+	switch {
+	case c.Eq(MerkleCommand):
+		m = &MerkleMessage{}
+	case c.Eq(MerkleCommand):
+		m = &TxMessage{}
+	}
+
+	err := m.Parse(r, testnet)
+	return m, err
 }
 
 var (
@@ -50,6 +77,9 @@ var (
 	PongCommand       CommandMsg = []byte("pong")
 	PingCommand       CommandMsg = []byte("ping")
 	MerkleCommand     CommandMsg = []byte("merkleblock")
+	FilterLoadCommand CommandMsg = []byte("filterload")
+	GetDataCommand    CommandMsg = []byte("getdata")
+	TxCommand         CommandMsg = []byte("tx")
 )
 
 type NetAddr struct {
@@ -75,11 +105,12 @@ func (addr *NetAddr) Encode() []byte {
 
 type Message interface {
 	Serialize() []byte
-	Parse(io.Reader) error
+	Parse(io.Reader, bool) error
 	GetCommand() CommandMsg
 }
 
 type MerkleMessage struct {
+	MerkleBlock *merkletree.MerkleBlock
 }
 
 func (m *MerkleMessage) GetCommand() CommandMsg {
@@ -90,8 +121,30 @@ func (m *MerkleMessage) Serialize() []byte {
 	return nil
 }
 
-func (m *MerkleMessage) Parse(r io.Reader) error {
+func (m *MerkleMessage) Parse(r io.Reader, testnet bool) error {
+	var err error
+	m.MerkleBlock, err = merkletree.Parse(r)
+
+	return err
+}
+
+type TxMessage struct {
+	Tx *tx.Tx
+}
+
+func (m *TxMessage) GetCommand() CommandMsg {
+	return MerkleCommand
+}
+
+func (m *TxMessage) Serialize() []byte {
 	return nil
+}
+
+func (m *TxMessage) Parse(r io.Reader, testnet bool) error {
+	var err error
+	m.Tx, err = tx.ParseTx(r, testnet)
+
+	return err
 }
 
 type VesrionMessage struct {
@@ -147,7 +200,7 @@ func (m *VesrionMessage) Serialize() []byte {
 	return result
 }
 
-func (m *VesrionMessage) Parse(r io.Reader) error {
+func (m *VesrionMessage) Parse(r io.Reader, testnet bool) error {
 	return nil
 }
 
@@ -185,7 +238,7 @@ func (m *VerackMessage) GetCommand() CommandMsg {
 func (m *VerackMessage) Serialize() []byte {
 	return []byte{}
 }
-func (m *VerackMessage) Parse(r io.Reader) error {
+func (m *VerackMessage) Parse(r io.Reader, testnet bool) error {
 	return nil
 }
 
@@ -199,7 +252,7 @@ func (m *GetHeadersMessage) GetCommand() CommandMsg {
 	return GetHeadersCommand
 }
 
-func (m *GetHeadersMessage) Parse(r io.Reader) error {
+func (m *GetHeadersMessage) Parse(r io.Reader, testnet bool) error {
 	return nil
 }
 
@@ -234,7 +287,7 @@ func (m *HeadersMessage) GetCommand() CommandMsg {
 	return HeadersCommand
 }
 
-func (m *HeadersMessage) Parse(r io.Reader) error {
+func (m *HeadersMessage) Parse(r io.Reader, testnet bool) error {
 	blockCount, err := u.ReadVariant(r)
 	if err != nil {
 		return err
@@ -276,7 +329,7 @@ func (m *PongMessage) Serialize() []byte {
 	return m.Nonce
 }
 
-func (m *PongMessage) Parse(r io.Reader) error {
+func (m *PongMessage) Parse(r io.Reader, testnet bool) error {
 	b, err := u.Read(r, 8)
 	if err != nil {
 		return err
@@ -285,4 +338,58 @@ func (m *PongMessage) Parse(r io.Reader) error {
 	m.Nonce = b
 
 	return nil
+}
+
+type FilterLoadMessage struct {
+	bloom *bloom.Filter
+}
+
+func NewLoadMessage(bloom *bloom.Filter) *FilterLoadMessage {
+	return &FilterLoadMessage{bloom: bloom}
+}
+
+func (m *FilterLoadMessage) GetCommand() CommandMsg {
+	return FilterLoadCommand
+}
+
+func (m *FilterLoadMessage) Serialize() []byte {
+	return m.bloom.FilterLoad(1)
+}
+
+func (m *FilterLoadMessage) Parse(r io.Reader, testnet bool) error {
+	return nil
+}
+
+type GetDataMessage struct {
+	InvVectors []*InvVector
+}
+
+func (m *GetDataMessage) Add(invVector *InvVector) {
+	m.InvVectors = append(m.InvVectors, invVector)
+}
+
+func (m *GetDataMessage) GetCommand() CommandMsg {
+	return GetDataCommand
+}
+
+func (m *GetDataMessage) Serialize() []byte {
+	result := make([]byte, 0, len(m.InvVectors)*36+8)
+
+	result = append(result, u.EncodeVariant(len(m.InvVectors))...)
+
+	for _, v := range m.InvVectors {
+		result = append(result, u.MustEncodeNumLittleEndian(v.Type)...)
+		result = append(result, u.CopybAndReverse(v.Hash)...)
+	}
+
+	return result
+}
+
+func (m *GetDataMessage) Parse(r io.Reader, testnet bool) error {
+	return nil
+}
+
+type InvVector struct {
+	Type uint32
+	Hash []byte
 }

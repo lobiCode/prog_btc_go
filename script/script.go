@@ -13,9 +13,22 @@ import (
 
 var ErrTxVersionLen = errors.New("wrong version len")
 var ErrScripParse = errors.New("parsing script failed")
+var ErrUnknownScriptPubKey = errors.New("unknown script pubkey")
 
 type Script struct {
 	Cmds [][]byte
+}
+
+func (s *Script) GetAddress(testnet bool) (string, error) {
+	if s.IsP2pkhScriptPubkey() {
+		return u.AddressP2pkh(s.Cmds[2], testnet), nil
+	}
+
+	if s.IsP2shScriptPubkeys() {
+		return u.AddressP2sh(s.Cmds[1], testnet), nil
+	}
+
+	return "", ErrUnknownScriptPubKey
 }
 
 func (s *Script) Serialize() []byte {
@@ -61,6 +74,10 @@ func (s *Script) Serialize() []byte {
 }
 
 func (s *Script) IsP2shScriptPubkeys() bool {
+	return isP2sh(s.Cmds)
+}
+
+func (s *Script) IsP2pkhScriptPubkey() bool {
 	return isP2sh(s.Cmds)
 }
 

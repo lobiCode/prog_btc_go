@@ -66,6 +66,7 @@ func ParseEnvelope(r io.Reader) (*Envelope, error) {
 
 	payload, err := u.ReadByetes(r, int64(payloadLength))
 	if err != nil {
+
 		return nil, err
 	}
 

@@ -121,19 +121,10 @@ func (pk *PrivateKey) Sec(compressed bool) []byte {
 	return result
 }
 
-func (pk *PrivateKey) Address(compressed, testnet bool) string {
+func (pk *PrivateKey) AddressP2pkh(compressed, testnet bool) string {
 	b160 := u.Hash160(pk.Sec(compressed))
 
-	result := make([]byte, 1, len(b160)+1)
-	if testnet {
-		result[0] = 0x6f
-	} else {
-		result[0] = 0x00
-	}
-
-	result = append(result, b160...)
-
-	return u.EncodeBase58Checksum(result)
+	return u.AddressP2pkh(b160, testnet)
 }
 
 func (pk *PrivateKey) Wif(compressed, testnet bool) string {

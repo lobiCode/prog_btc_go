@@ -502,3 +502,45 @@ func ByteToBits(b []byte) []byte {
 	}
 	return bits
 }
+
+func BitsToBytes(bits []byte) []byte {
+	if len(bits)%8 != 0 {
+		panic("bits length not divisible by 8")
+	}
+	b := make([]byte, len(bits)/8)
+	for i, v := range bits {
+		if v != 0 {
+			byteIndex := i / 8
+			bitIndex := uint(i % 8)
+			b[byteIndex] |= 1 << bitIndex
+		}
+	}
+
+	return b
+}
+
+func AddressP2pkh(hash160 []byte, testnet bool) string {
+	result := make([]byte, 1, len(hash160)+1)
+	if testnet {
+		result[0] = 0x6f
+	} else {
+		result[0] = 0x00
+	}
+
+	result = append(result, hash160...)
+
+	return EncodeBase58Checksum(result)
+}
+
+func AddressP2sh(hash160 []byte, testnet bool) string {
+	result := make([]byte, 1, len(hash160)+1)
+	if testnet {
+		result[0] = 0xc4
+	} else {
+		result[0] = 0x05
+	}
+
+	result = append(result, hash160...)
+
+	return EncodeBase58Checksum(result)
+}

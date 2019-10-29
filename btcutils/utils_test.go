@@ -103,6 +103,15 @@ func TestByteToBits(t *testing.T) {
 	check(expected, result, t)
 }
 
+func TestBitsToBytes(t *testing.T) {
+	input := []byte{0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
+	expected := "4000600a080000010940"
+	expectedB, _ := hex.DecodeString(expected)
+
+	result := BitsToBytes(input)
+	check(expectedB, result, t)
+}
+
 func check(expected, recived interface{}, t *testing.T) {
 	t.Helper()
 	if !reflect.DeepEqual(recived, expected) {
